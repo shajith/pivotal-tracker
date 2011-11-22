@@ -40,6 +40,11 @@
   :group 'pivotal
   :type 'string)
 
+(defcustom pivotal-limit-to ""
+  "Name of user to limit stories to"
+  :group 'pivotal
+  :type 'string)
+
 (defconst pivotal-base-url "http://www.pivotaltracker.com/services/v3"
   "format string to use when creating endpoint urls")
 
@@ -392,7 +397,18 @@ Owned By:     %s
 
 (defun pivotal-extract-stories-from-iteration-xml (iteration-xml)
   (let ((stories (pivotal-xml-collection (car iteration-xml) `(iteration stories story))))
-    (sort stories 'pivotal-sort-stories)))
+    (if (not (string-equal "" pivotal-limit-to))
+        (sort (limit-to-owned-by stories pivotal-limit-to) 'pivotal-sort-stories)
+        (sort stories 'pivotal-sort-stories))))
+
+(defun limit-to-owned-by (stories owner_id)
+  (remove-if-not (owned-by owner_id) stories))
+
+(defun owned-by (owner_id)
+  (lambda (story)
+    (string-equal owner_id (pivotal-story-attribute story 'owned_by))))
+
+    
 
 (defun pivotal-sort-stories (story1 story2)
   (<= (pivotal-display-priority story1) (pivotal-display-priority story2)))
